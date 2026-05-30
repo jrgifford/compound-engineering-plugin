@@ -148,6 +148,7 @@ Determine how to proceed based on what was provided in `<input_document>`.
    **Subagent isolation** — give each parallel subagent its own working tree:
    - **Claude Code (`Agent` tool):** pass `isolation: "worktree"` and `run_in_background: true`. The harness creates a per-subagent worktree under `.claude/worktrees/agent-<id>` on its own branch. Verify `.claude/worktrees/` is gitignored before relying on this.
    - **Other platforms** without built-in worktree isolation (e.g., Codex `spawn_agent`, Pi `subagent`): subagents share the orchestrator's directory.
+   - **Pi note:** `pi-subagents` does not provide per-subagent worktree isolation. Unless the user has manually placed each subagent in a separate worktree, treat Pi parallel dispatch as shared-directory mode and apply the constraints below.
 
    **Subagent dispatch** uses your available subagent or task spawning mechanism. For each unit, give the subagent:
    - The full plan file path (for overall context)

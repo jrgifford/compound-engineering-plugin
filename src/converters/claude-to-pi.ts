@@ -39,8 +39,121 @@ export function convertClaudeToPi(
     })),
     generatedSkills: [],
     agents,
-    extensions: [],
+    extensions: plugin.manifest.name === "compound-engineering" ? [buildCompoundEngineeringPiExtension()] : [],
     mcporterConfig: plugin.mcpServers ? convertMcpToMcporter(plugin.mcpServers) : undefined,
+  }
+}
+
+function buildCompoundEngineeringPiExtension() {
+  return {
+    name: "compound-engineering/index.ts",
+    content: String.raw`import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+function resolvePiRoot(): string {
+  const extensionDir = path.dirname(fileURLToPath(import.meta.url));
+  return path.resolve(extensionDir, "..", "..");
+}
+
+function countEntries(dir: string, predicate: (name: string) => boolean = () => true): number {
+  try {
+    return fs.readdirSync(dir).filter(predicate).length;
+  } catch {
+    return 0;
+  }
+}
+
+function hasTool(pi: ExtensionAPI, toolName: string): boolean {
+  const tools = (pi as unknown as { getAllTools?: () => Array<{ name: string }> }).getAllTools?.() ?? [];
+  return tools.some((tool) => tool.name === toolName);
+}
+
+function buildStatus(pi: ExtensionAPI, ctx: ExtensionContext): string {
+  const piRoot = resolvePiRoot();
+  const skillsDir = path.join(piRoot, "skills");
+  const agentsDir = path.join(piRoot, "agents");
+  const manifestPath = path.join(piRoot, "compound-engineering", "install-manifest.json");
+  const skillCount = countEntries(skillsDir, (name) => fs.statSync(path.join(skillsDir, name)).isDirectory());
+  const agentCount = countEntries(agentsDir, (name) => name.endsWith(".md"));
+  const hasSubagent = hasTool(pi, "subagent");
+  const hasAskUser = hasTool(pi, "ask_user");
+
+  const lines = [
+    "Compound Engineering for Pi",
+    "",
+    "Pi root: " + piRoot,
+    "Working directory: " + ctx.cwd,
+    "Managed manifest: " + (fs.existsSync(manifestPath) ? "found" : "missing"),
+    "Skills installed: " + skillCount,
+    "Agents installed: " + agentCount,
+    "subagent tool: " + (hasSubagent ? "available" : "missing (run: pi install npm:pi-subagents)"),
+    "ask_user tool: " + (hasAskUser ? "available" : "missing/recommended (run: pi install npm:pi-ask-user)"),
+    "",
+    "Core workflow:",
+    "1. /skill:ce-brainstorm <idea>",
+    "2. /skill:ce-plan <requirements-or-idea>",
+    "3. /skill:ce-work <docs/plans/...>",
+    "4. /skill:ce-code-review",
+    "5. /skill:ce-compound",
+  ];
+
+  if (!hasSubagent) {
+    lines.push("", "Install pi-subagents before using CE workflows that dispatch review, research, or work subagents.");
+  }
+  if (!hasAskUser) {
+    lines.push("", "Install pi-ask-user for richer blocking questions. CE skills fall back to numbered chat options when unavailable.");
+  }
+
+  return lines.join("\n");
+}
+
+export default function compoundEngineeringPiExtension(pi: ExtensionAPI): void {
+  pi.registerCommand("ce-status", {
+    description: "Show Compound Engineering Pi installation status and dependency health",
+    handler: async (_args, ctx) => {
+      ctx.ui.notify(buildStatus(pi, ctx), "info");
+    },
+  });
+
+  pi.registerCommand("ce-setup-pi", {
+    description: "Show Pi setup steps for Compound Engineering",
+    handler: async (_args, ctx) => {
+      ctx.ui.notify([
+        "Compound Engineering Pi setup",
+        "",
+        "Required:",
+        "  pi install npm:pi-subagents",
+        "",
+        "Recommended:",
+        "  pi install npm:pi-ask-user",
+        "",
+        "After installing dependencies, run /reload and then /ce-status.",
+        "Use /skill:ce-plan, /skill:ce-work, /skill:ce-code-review, and /skill:ce-compound for the core loop.",
+      ].join("\n"), "info");
+    },
+  });
+
+  pi.registerCommand("ce-help", {
+    description: "Show the main Compound Engineering workflow commands for Pi",
+    handler: async (_args, ctx) => {
+      ctx.ui.notify([
+        "Compound Engineering core loop:",
+        "  /skill:ce-brainstorm <idea>",
+        "  /skill:ce-plan <requirements-or-idea>",
+        "  /skill:ce-work <plan path>",
+        "  /skill:ce-code-review",
+        "  /skill:ce-compound",
+        "",
+        "Utilities:",
+        "  /ce-status",
+        "  /ce-setup-pi",
+      ].join("\n"), "info");
+    },
+  });
+}
+`,
   }
 }
 

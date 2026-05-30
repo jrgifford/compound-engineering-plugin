@@ -95,6 +95,7 @@ describe("writePiBundle", () => {
     const agentsPath = path.join(outputRoot, "AGENTS.md")
     const agentsContent = await fs.readFile(agentsPath, "utf8")
     expect(agentsContent).toContain("BEGIN COMPOUND PI TOOL MAP")
+    expect(agentsContent).toContain("/ce-status")
     expect(agentsContent).toContain("pi-subagents")
     expect(agentsContent).toContain("pi-ask-user")
   })
@@ -204,7 +205,10 @@ Run these research agents:
       ],
       generatedSkills: [],
       agents: [{ name: "old-agent", content: "---\nname: old-agent\n---\n\nBody" }],
-      extensions: [{ name: "compound-engineering-compat.ts", content: "export default function first() {}" }],
+      extensions: [
+        { name: "compound-engineering-compat.ts", content: "export default function first() {}" },
+        { name: "compound-engineering/index.ts", content: "export default function nested() {}" },
+      ],
     })
 
     await writePiBundle(outputRoot, {
@@ -222,6 +226,7 @@ Run these research agents:
     expect(await exists(path.join(outputRoot, "agents", "old-agent.md"))).toBe(false)
     expect(await exists(path.join(outputRoot, "agents", "new-agent.md"))).toBe(true)
     expect(await exists(path.join(outputRoot, "extensions", "compound-engineering-compat.ts"))).toBe(false)
+    expect(await exists(path.join(outputRoot, "extensions", "compound-engineering", "index.ts"))).toBe(false)
   })
 
   test("namespaces managed install manifests per plugin so installs do not collide", async () => {
@@ -358,9 +363,13 @@ Run these research agents:
     expect(await exists(path.join(outputRoot, "prompts", "reproduce-bug.md"))).toBe(false)
     expect(await exists(path.join(outputRoot, "prompts", "report-bug.md"))).toBe(false)
     expect(await exists(path.join(outputRoot, "skills", "ce-plan", "SKILL.md"))).toBe(true)
+    expect(await exists(path.join(outputRoot, "skills", "ce-work", "SKILL.md"))).toBe(true)
     // ce-repo-research-analyst is a Claude agent, so it installs to .pi/agents/<name>.md
     // (not .pi/skills/<name>/SKILL.md) so nicobailon/pi-subagents can resolve it.
     expect(await exists(path.join(outputRoot, "agents", "ce-repo-research-analyst.md"))).toBe(true)
+    expect(await exists(path.join(outputRoot, "agents", "ce-code-simplicity-reviewer.md"))).toBe(true)
+    expect(await exists(path.join(outputRoot, "extensions", "compound-engineering", "index.ts"))).toBe(true)
+    expect(await exists(path.join(outputRoot, "compound-engineering", "install-manifest.json"))).toBe(true)
     expect(await exists(path.join(outputRoot, "compound-engineering", "legacy-backup"))).toBe(true)
   })
 })

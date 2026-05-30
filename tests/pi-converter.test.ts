@@ -8,7 +8,7 @@ import type { ClaudePlugin } from "../src/types/claude"
 const fixtureRoot = path.join(import.meta.dir, "fixtures", "sample-plugin")
 
 describe("convertClaudeToPi", () => {
-  test("converts commands, skills, agents, and MCP servers without shipping a Pi extension", async () => {
+  test("converts commands, skills, agents, MCP servers, and the Pi companion extension", async () => {
     const plugin = await loadClaudePlugin(fixtureRoot)
     const bundle = convertClaudeToPi(plugin, {
       agentMode: "subagent",
@@ -37,10 +37,13 @@ describe("convertClaudeToPi", () => {
     // commands-as-skills on other targets; Pi keeps it empty.
     expect(bundle.generatedSkills).toEqual([])
 
-    // Pi installs now depend on the community pi-subagents and pi-ask-user extensions,
-    // so the converter emits no bundled extension. Legacy cleanup in the Pi writer
-    // removes any prior compound-engineering-compat.ts on upgrade.
-    expect(bundle.extensions).toEqual([])
+    // Compound Engineering ships a small Pi companion extension for setup/status/help.
+    // It still depends on community pi-subagents and pi-ask-user for subagent and
+    // blocking-question primitives.
+    expect(bundle.extensions).toHaveLength(1)
+    expect(bundle.extensions[0].name).toBe("compound-engineering/index.ts")
+    expect(bundle.extensions[0].content).toContain("ce-status")
+    expect(bundle.extensions[0].content).toContain("pi-subagents")
 
     // MCP servers declared in plugin.json are translated to Pi's mcporter.json
     // shape so plugins with MCP wiring keep their backends after conversion.
@@ -80,6 +83,7 @@ describe("convertClaudeToPi", () => {
     })
 
     expect(bundle.mcporterConfig).toBeUndefined()
+    expect(bundle.extensions).toEqual([])
   })
 
   test("transforms Task calls, slash commands, and todo tool references; preserves AskUserQuestion", () => {

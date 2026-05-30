@@ -217,12 +217,14 @@ bunx @every-env/compound-plugin install compound-engineering --to gemini
 bunx @every-env/compound-plugin install compound-engineering --to kiro
 ```
 
-**Pi prerequisites.** Pi does not ship a native subagent primitive, so the Pi install depends on [nicobailon/pi-subagents](https://github.com/nicobailon/pi-subagents) (required) and recommends [edlsh/pi-ask-user](https://github.com/edlsh/pi-ask-user) for richer blocking user questions:
+**Pi prerequisites and setup.** Pi does not ship a native subagent primitive, so the Pi install depends on [nicobailon/pi-subagents](https://github.com/nicobailon/pi-subagents) (required) and recommends [edlsh/pi-ask-user](https://github.com/edlsh/pi-ask-user) for richer blocking user questions:
 
 ```bash
 pi install npm:pi-subagents    # required — provides the `subagent` tool used by skills that dispatch parallel agents
 pi install npm:pi-ask-user     # recommended — provides the `ask_user` tool; skills fall back to numbered options in chat when it is missing
 ```
+
+The Pi conversion also installs a small Compound Engineering companion extension. After installing dependencies, run `/reload` in Pi, then use `/ce-status` to verify the generated skills, agents, and dependency tools. Use `/ce-setup-pi` for the setup checklist and `/ce-help` for the core CE workflow commands.
 
 To auto-detect custom-install targets and install to all:
 

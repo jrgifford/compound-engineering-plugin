@@ -26,12 +26,15 @@ const PI_AGENTS_BLOCK_BODY = `## Compound Engineering (Pi compatibility)
 This block is managed by compound-plugin.
 
 Pi extensions used by this plugin:
+- Included: \`compound-engineering\` registers \`/ce-status\`, \`/ce-setup-pi\`, and \`/ce-help\`
 - Required: \`pi-subagents\` (by nicobailon) provides the \`subagent\` tool used by skills that dispatch parallel agents
 - Recommended: \`pi-ask-user\` (by edlsh) provides the \`ask_user\` tool; skills fall back to numbered options in chat when it is missing
 
-Install with:
+Install dependencies with:
   pi install npm:pi-subagents
   pi install npm:pi-ask-user
+
+Then run \`/reload\` and \`/ce-status\` in Pi.
 `
 
 export type PiInstallManifest = {
@@ -105,6 +108,9 @@ export async function writePiBundle(outputRoot: string, bundle: PiBundle): Promi
   }
 
   for (const extension of bundle.extensions) {
+    if (!isSafeManagedPath(paths.extensionsDir, extension.name)) {
+      throw new Error(`Unsafe Pi extension path: ${extension.name}`)
+    }
     await writeText(path.join(paths.extensionsDir, extension.name), extension.content + "\n")
   }
 
